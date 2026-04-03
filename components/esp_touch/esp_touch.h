@@ -1,5 +1,5 @@
-#ifndef TOUCH_BSP_H
-#define TOUCH_BSP_H
+#ifndef ESP_TOUCH_H
+#define ESP_TOUCH_H
 
 #include <stdint.h>
 #include <stdbool.h>

@@ -1,4 +1,4 @@
-#include "touch_bsp.h"
+#include "esp_touch.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
 
