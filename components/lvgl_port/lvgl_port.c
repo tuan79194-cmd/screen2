@@ -17,6 +17,14 @@ static const char *TAG = "LVGL_PORT";
 // CÁC HÀM CALLBACK (CHỈ DÙNG NỘI BỘ TRONG FILE NÀY NÊN CÓ CHỮ "STATIC")
 // =========================================================================
 
+// Biến toàn cục chứa hình ảnh màn hình
+lv_color_t *lvgl_buf1 = NULL;
+
+// Hàm cho phép các file khác "mượn" ảnh
+lv_color_t* get_lvgl_buf(void) {
+    return lvgl_buf1;
+}
+
 static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
 {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) disp_drv->user_data;
@@ -62,9 +70,9 @@ void lvgl_port_init(void)
 
     // 3. Cấp phát Buffer Full Màn Hình (Chống xé hình tối đa)
     size_t draw_buffer_sz = 170 * 320; 
-    lv_color_t *buf1 = heap_caps_malloc(draw_buffer_sz * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    lvgl_buf1 = heap_caps_malloc(draw_buffer_sz * sizeof(lv_color_t), MALLOC_CAP_DMA);
     static lv_disp_draw_buf_t disp_buf;
-    lv_disp_draw_buf_init(&disp_buf, buf1, NULL, draw_buffer_sz);
+    lv_disp_draw_buf_init(&disp_buf, lvgl_buf1, NULL, draw_buffer_sz);
 
     // 4. Đăng ký Cấu hình Hiển Thị cho LVGL
     static lv_disp_drv_t disp_drv;
@@ -74,6 +82,9 @@ void lvgl_port_init(void)
     disp_drv.flush_cb = disp_flush;
     disp_drv.draw_buf = &disp_buf;      
     disp_drv.user_data = panel_handle;
+
+    // THÊM DÒNG NÀY: Ép LVGL luôn làm mới toàn bộ Buffer 1:1 với màn hình
+    disp_drv.full_refresh = 1;
     lv_disp_drv_register(&disp_drv);
 
     // 5. Đăng ký Cấu hình Cảm Ứng cho LVGL

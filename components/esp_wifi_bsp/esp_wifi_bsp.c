@@ -4,6 +4,7 @@
 #include "esp_event.h" 
 #include "nvs_flash.h"
 #include "esp_log.h"
+#include "web_server_bsp.h"
 
 static const char *TAG = "WIFI_BSP";
 static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -49,6 +50,8 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
         uint32_t pxip = event->ip_info.ip.addr;
         sprintf(ip, "%d.%d.%d.%d", (uint8_t)(pxip), (uint8_t)(pxip >> 8), (uint8_t)(pxip >> 16), (uint8_t)(pxip >> 24));
         ESP_LOGI(TAG, "KET NOI THANH CONG! IP: %s", ip);
+        // --- GỌI TỔNG ĐÀI WEB SERVER RA LÀM VIỆC ---
+        web_server_start();
     }
     else if(event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
