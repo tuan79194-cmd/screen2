@@ -3,12 +3,15 @@
 #include "freertos/task.h"
 #include "lvgl.h"
 #include "lvgl_port.h" // Chỉ cần include cổng chào
-
+#include "esp_wifi_bsp.h"
 
 void app_main(void)
 {
+
     // 1. Gọi quản gia ra setup mọi thứ (Màn hình, Cảm ứng, LVGL)
     lvgl_port_init();
+    // 0. Đánh thức module Wi-Fi
+    espwifi_Init();
 
     // 2. Bắt đầu không gian sáng tạo UI của riêng bạn
     lv_obj_t *btn = lv_btn_create(lv_scr_act());

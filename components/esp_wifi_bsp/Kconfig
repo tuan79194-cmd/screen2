@@ -1,0 +1,15 @@
+menu "Cấu hình Wi-Fi Dự án"
+
+    config WIFI_SSID
+        string "Tên mạng Wi-Fi (SSID)"
+        default "TrinityX Phong Khach"
+        help
+            Nhập tên mạng Wi-Fi
+
+    config WIFI_PASSWORD
+        string "Mật khẩu Wi-Fi"
+        default "12345678"
+        help
+            Nhập mật khẩu mạng Wi-Fi.
+
+endmenu
