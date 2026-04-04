@@ -14,6 +14,12 @@ void app_main(void)
     lv_obj_t *btn = lv_btn_create(lv_scr_act());
     lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_size(btn, 100, 50);
+    // THÊM DÒNG NÀY ĐỂ TÔ MÀU ĐỎ CHO NÚT
+    // 1. Màu khi để bình thường (Đỏ)
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    // 2. Màu khi bị bấm xuống (Xanh Lá)
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x00FF00), LV_PART_MAIN | LV_STATE_PRESSED);
 
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, "CLICK ME");
