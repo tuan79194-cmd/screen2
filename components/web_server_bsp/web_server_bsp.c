@@ -8,35 +8,9 @@ static const char *TAG = "WEB_SERVER";
 // =========================================================
 // 1. GIAO DIỆN WEBSITE (HTML + CSS + JS)
 // =========================================================
-static const char *html_page = 
-    "<!DOCTYPE html>"
-    "<html>"
-    "<head>"
-        "<meta charset=\"UTF-8\">"
-        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-        "<title>ESP32 Monitor</title>"
-        "<style>"
-            "body { text-align: center; font-family: Arial, sans-serif; background-color: #2c3e50; color: white; margin-top: 50px; }"
-            "button { padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #27ae60; color: white; border: none; border-radius: 8px; box-shadow: 0 4px #1e8449; }"
-            "button:active { background-color: #1e8449; box-shadow: 0 2px #1e8449; transform: translateY(2px); }"
-            "img { margin-top: 20px; border: 5px solid #ecf0f1; border-radius: 10px; width: 170px; height: 320px; object-fit: contain; background-color: black; }"
-        "</style>"
-    "</head>"
-    "<body>"
-        "<h2>Màn hình ESP32 Live</h2>"
-        "<button onclick=\"capture()\">📸 Chụp Màn Hình</button><br>"
-        ""
-        "<img id=\"screen\" src=\"\" alt=\"Chưa có ảnh\"/>"
-
-        "<script>"
-            "function capture() {"
-                "var img = document.getElementById('screen');"
-                "// Thêm mã thời gian để tránh trình duyệt lưu cache ảnh cũ\n"
-                "img.src = '/screenshot.bmp?t=' + new Date().getTime();"
-            "}"
-        "</script>"
-    "</body>"
-    "</html>";
+// Lấy địa chỉ của file index.html đã được nhúng trong bộ nhớ Flash
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 
 // =========================================================
 // 2. CÁC TUYẾN ĐƯỜNG (ROUTES) XỬ LÝ DỮ LIỆU
@@ -46,7 +20,11 @@ static const char *html_page =
 static esp_err_t index_get_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "Co nguoi vua truy cap vao Website!");
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, html_page, HTTPD_RESP_USE_STRLEN);
+    // Tính toán dung lượng của file HTML
+    size_t html_len = index_html_end - index_html_start;
+    
+    // Gửi toàn bộ file lên trình duyệt
+    httpd_resp_send(req, (const char *)index_html_start, html_len);
     return ESP_OK;
 }
 
