@@ -13,6 +13,11 @@
 
 static const char *TAG = "LVGL_PORT";
 
+// Nhập các biến toàn cục từ web_server_bsp.c sang
+extern volatile int web_touch_x;
+extern volatile int web_touch_y;
+extern volatile int web_touch_state;
+
 // =========================================================================
 // CÁC HÀM CALLBACK (CHỈ DÙNG NỘI BỘ TRONG FILE NÀY NÊN CÓ CHỮ "STATIC")
 // =========================================================================
@@ -34,18 +39,27 @@ static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_
 
 static void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
+// 1. Kiểm tra xem người dùng có đang Click trên Web không
+    if (web_touch_state == 1) {
+        data->state = LV_INDEV_STATE_PR; // PR = Pressed (Đang nhấn)
+        data->point.x = web_touch_x;
+        data->point.y = web_touch_y;
+        return; // Bỏ qua cảm ứng vật lý, ưu tiên Web
+    }
+
+    // 2. Nếu Web không chạm, mới đọc cảm ứng từ mạch thật (GIỮ NGUYÊN CODE CŨ CỦA BẠN Ở ĐÂY)
     uint16_t touch_x = 0;
     uint16_t touch_y = 0;
     
-    // Sử dụng hàm getTouch() từ touch_bsp.c của bạn
-    bool is_pressed = esp_touch_read(&touch_x, &touch_y);
+    // Giả sử đây là đoạn code đọc chip cảm ứng thật của bạn
+    bool is_pressed = esp_touch_read(&touch_x, &touch_y); 
 
     if (is_pressed) {
         data->state = LV_INDEV_STATE_PR;
         data->point.x = touch_x;
         data->point.y = touch_y;
     } else {
-        data->state = LV_INDEV_STATE_REL;
+        data->state = LV_INDEV_STATE_REL; // REL = Released (Thả ra)
     }
 }
 

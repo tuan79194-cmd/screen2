@@ -12,6 +12,11 @@ static const char *TAG = "WEB_SERVER";
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 
+// Biến toàn cục lưu trạng thái chạm từ Website
+volatile int web_touch_x = 0;
+volatile int web_touch_y = 0;
+volatile int web_touch_state = 0; // 0: Thả tay, 1: Đang chạm
+
 // =========================================================
 // 2. CÁC TUYẾN ĐƯỜNG (ROUTES) XỬ LÝ DỮ LIỆU
 // =========================================================
@@ -99,6 +104,37 @@ if (frame_buffer != NULL) {
     
     return ESP_OK;
 }
+
+// Tuyến 3: Nhận tọa độ khi người dùng click chuột trên Web (GET /touch?x=...&y=...&state=...)
+static esp_err_t touch_get_handler(httpd_req_t *req) {
+    char buf[100];
+    
+    // Lấy chuỗi query (phần sau dấu ? trên URL)
+    if (httpd_req_get_url_query_str(req, buf, sizeof(buf)) == ESP_OK) {
+        char param[10];
+        
+        // Cắt lấy giá trị X
+        if (httpd_query_key_value(buf, "x", param, sizeof(param)) == ESP_OK) {
+            web_touch_x = atoi(param);
+        }
+        // Cắt lấy giá trị Y
+        if (httpd_query_key_value(buf, "y", param, sizeof(param)) == ESP_OK) {
+            web_touch_y = atoi(param);
+        }
+        // Cắt lấy trạng thái (1 là chạm, 0 là nhả)
+        if (httpd_query_key_value(buf, "state", param, sizeof(param)) == ESP_OK) {
+            web_touch_state = atoi(param);
+        }
+        
+        // In ra log để bạn dễ kiểm tra
+        ESP_LOGI(TAG, "Web Touch: X=%d, Y=%d, State=%d", web_touch_x, web_touch_y, web_touch_state);
+    }
+    
+    // Báo cho trình duyệt biết đã nhận xong (không cần gửi data gì lại)
+    httpd_resp_send_chunk(req, NULL, 0); 
+    return ESP_OK;
+}
+
 // =========================================================
 // 3. KHỞI TẠO WEB SERVER
 // =========================================================
@@ -116,6 +152,15 @@ void web_server_start(void) {
         // Đăng ký Tuyến 2
         httpd_uri_t uri_screen = { .uri = "/screenshot.bmp", .method = HTTP_GET, .handler = screenshot_get_handler, .user_ctx = NULL };
         httpd_register_uri_handler(server, &uri_screen);
+
+        // Đăng ký tuyến 3
+        httpd_uri_t touch_uri = {
+            .uri       = "/touch",
+            .method    = HTTP_GET,
+            .handler   = touch_get_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &touch_uri);
 
         ESP_LOGI(TAG, "Web Server da san sang!");
     } else {
