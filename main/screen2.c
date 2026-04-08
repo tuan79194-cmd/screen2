@@ -10,8 +10,11 @@ void app_main(void)
 
     // 1. Gọi quản gia ra setup mọi thứ (Màn hình, Cảm ứng, LVGL)
     lvgl_port_init();
-    // 0. Đánh thức module Wi-Fi
-    espwifi_Init();
+    // Kịch bản 1: Để mạch bắt Wi-Fi nhà bạn
+    // espwifi_Init(); 
+
+    // Kịch bản 2: Tự phát Wi-Fi để mang ra đồng
+    espwifi_Init_AP();
 
     // 2. Bắt đầu không gian sáng tạo UI của riêng bạn
     lv_obj_t *btn = lv_btn_create(lv_scr_act());
@@ -31,6 +34,6 @@ void app_main(void)
     // 3. Vòng lặp duy trì hệ thống
     while (1) {
         lv_timer_handler(); 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
