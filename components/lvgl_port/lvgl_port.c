@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "esp_timer.h"
 #include "esp_log.h"
 #include "lvgl.h"
@@ -22,8 +23,13 @@ extern volatile int web_touch_state;
 // CÁC HÀM CALLBACK (CHỈ DÙNG NỘI BỘ TRONG FILE NÀY NÊN CÓ CHỮ "STATIC")
 // =========================================================================
 
+
+
 // Biến toàn cục chứa hình ảnh màn hình
 lv_color_t *lvgl_buf1 = NULL;
+
+// Biến Ổ khóa bảo vệ đa luồng
+static SemaphoreHandle_t lvgl_mux = NULL;
 
 // Hàm cho phép các file khác "mượn" ảnh
 lv_color_t* get_lvgl_buf(void) {
@@ -68,6 +74,17 @@ static void lv_tick_task(void *arg)
     lv_tick_inc(2); 
 }
 
+bool lvgl_port_lock(uint32_t timeout_ms)
+{
+    const TickType_t timeout_ticks = (timeout_ms == 0) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
+    return xSemaphoreTake(lvgl_mux, timeout_ticks) == pdTRUE;
+}
+
+void lvgl_port_unlock(void)
+{
+    xSemaphoreGive(lvgl_mux);
+}
+
 // =========================================================================
 // HÀM KHỞI TẠO CHÍNH (ĐƯỢC GỌI TỪ MAIN.C)
 // =========================================================================
@@ -75,6 +92,13 @@ static void lv_tick_task(void *arg)
 void lvgl_port_init(void)
 {
     ESP_LOGI(TAG, "Bắt đầu khởi tạo hệ thống đồ họa và phần cứng...");
+
+    // Tạo ổ khóa Mutex trước khi làm bất cứ việc gì khác
+    lvgl_mux = xSemaphoreCreateMutex();
+    if (lvgl_mux == NULL) {
+        ESP_LOGE(TAG, "Lỗi: Không thể tạo Mutex cho LVGL!");
+        return;
+    }
 
     // 1. Khởi tạo toàn bộ phần cứng (Màn hình + I2C + Cảm ứng)
     esp_lcd_panel_handle_t panel_handle = lcd_bsp_init();

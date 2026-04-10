@@ -6,11 +6,14 @@
 #include "esp_log.h"
 #include "web_server_bsp.h"
 
+// Khai báo để trình biên dịch biết hàm này nằm ở file khác (screen2.c)
+extern void ui_update_wifi_result(bool is_success);
+
 static const char *TAG = "WIFI_BSP";
 static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 // ========================================================
-// CHẾ ĐỘ 1: KẾT NỐI VÀO WIFI CÓ SẴN (STATION MODE)
+// CHẾ ĐỘ 1: KHỞI TẠO STATION MODE (Chỉ bật lên chờ lệnh)
 // ========================================================
 void espwifi_Init(void)
 {
@@ -26,18 +29,26 @@ void espwifi_Init(void)
     esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, &Instance_WIFI_IP);
     esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, &Instance_WIFI_IP);
     
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = CONFIG_WIFI_SSID,
-            .password = CONFIG_WIFI_PASSWORD,
-        },
-    };
-    
+    // Chỉ set chế độ STA và khởi động Wi-Fi (Bật ăng-ten lên)
+    // TUYỆT ĐỐI KHÔNG GỌI esp_wifi_set_config HAY esp_wifi_start ở đây nữa
     esp_wifi_set_mode(WIFI_MODE_STA);               
-    esp_wifi_set_config(WIFI_IF_STA, &wifi_config); 
     esp_wifi_start(); 
 }
 
+// ========================================================
+// HÀM MỚI: RA LỆNH KẾT NỐI TỪ LVGL
+// ========================================================
+void espwifi_connect_to(const char *ssid, const char *password) {
+    ESP_LOGI(TAG, "Nhan lenh tu LVGL! Dang thu ket noi den: %s", ssid);
+
+    wifi_config_t wifi_config = {0}; 
+    strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid) - 1);
+    strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password) - 1);
+
+    // Nạp cấu hình mới và ra lệnh kết nối
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_connect();
+}
 // ========================================================
 // CHẾ ĐỘ 2: TỰ PHÁT WIFI (ACCESS POINT MODE)
 // ========================================================
@@ -82,8 +93,8 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
     // --- CÁC SỰ KIỆN CỦA STATION MODE ---
     if (event_id == WIFI_EVENT_STA_START)
     {
-        ESP_LOGI(TAG, "Da bat Wifi, dang ket noi den: %s\n", CONFIG_WIFI_SSID);
-        esp_wifi_connect(); 
+        // XÓA dòng esp_wifi_connect() ở đây đi!
+        ESP_LOGI(TAG, "Wi-Fi da san sang! Dang cho lenh tu man hinh LVGL...\n");
     }
     else if (event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -95,10 +106,16 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
         
         // Gọi Web Server chạy
         web_server_start();
+        // BÁO CÁO THÀNH CÔNG CHO LVGL
+        ui_update_wifi_result(true);
     }
     else if(event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         ESP_LOGI(TAG, "Mat mang hoac sai pass! Dang thu ket noi lai...\n");
+
+        // BÁO CÁO THẤT BẠI CHO LVGL
+        ui_update_wifi_result(false);
+
         esp_wifi_connect(); 
     }
     

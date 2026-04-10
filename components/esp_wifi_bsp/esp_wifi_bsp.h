@@ -13,6 +13,6 @@ void espwifi_Init(void);
 void espwifi_Init_AP(void);
 
 // Hàm mới: Ra lệnh kết nối tới một mạng cụ thể (Sẽ được gọi từ LVGL)
-// void espwifi_connect_to(const char *ssid, const char *password);
+void espwifi_connect_to(const char *ssid, const char *password);
 
 #endif
