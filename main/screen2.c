@@ -20,6 +20,7 @@ lv_obj_t * my_wifi_btn = NULL;
 lv_obj_t * my_wifi_label = NULL;
 
 lv_obj_t * ui_led = NULL;   // Cái đèn ảo trên màn hình
+lv_obj_t * ui_arc_label = NULL; // Biến lưu cái nhãn phần trăm của vòng tròn
 
 // =========================================================
 // CÁC HÀM XỬ LÝ SỰ KIỆN CHUYỂN TRANG
@@ -96,6 +97,25 @@ static void btn_turn_off_cb(lv_event_t * e) {
         lv_led_off(ui_led);
         led_bsp_set_state(false); // <--- RA LỆNH MẠCH THẬT TẮT
     }
+}
+
+// ---------------------------------------------------------
+// SỰ KIỆN KÉO VÒNG TRÒN ARC
+// ---------------------------------------------------------
+static void arc_value_changed_cb(lv_event_t * e) {
+    lv_obj_t * arc = lv_event_get_target(e);
+
+    // Lấy giá trị hiện tại của Arc (từ 0 đến 100)
+    int value = lv_arc_get_value(arc);
+
+    // Cập nhật con số hiển thị trên nhãn
+    lv_label_set_text_fmt(ui_arc_label, "%d%%", value);
+
+    // In ra terminal để tiện theo dõi
+    ESP_LOGI(TAG, "Gia tri do sang dang vuot: %d%%", value);
+
+    // GỌI HÀM PHẦN CỨNG ĐỂ THAY ĐỔI ĐỘ SÁNG LED
+    led_bsp_set_brightness((uint8_t)value);
 }
 
 // =========================================================
@@ -184,6 +204,30 @@ void app_main(void)
     // ==========================================
     // HIỂN THỊ MÀN HÌNH ĐẦU TIÊN
     // ==========================================
+
+    // ---------------------------------------------------------
+    // 4. THÊM VÒNG TRÒN CHỈNH ĐỘ SÁNG (Bị đẩy xuống để phải cuộn)
+    // ---------------------------------------------------------
+    lv_obj_t * ui_arc = lv_arc_create(scr_control);
+    lv_obj_set_size(ui_arc, 150, 150); // Đường kính 150px
+    lv_arc_set_range(ui_arc, 0, 100);  // Dải giá trị từ 0 đến 100
+    lv_arc_set_value(ui_arc, 50);      // Bắt đầu ở mức 50%
+    // Cố tình đẩy Y xuống 180 pixel. Do màn hình nhỏ, nó sẽ tràn xuống dưới
+    // Tạo ra thanh cuộn (scrollbar) để bạn vuốt lên xem.
+    lv_obj_align(ui_arc, LV_ALIGN_CENTER, 0, 180);
+    // Gắn sự kiện khi bị thay đổi giá trị
+    lv_obj_add_event_cb(ui_arc, arc_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // 5. Tạo chữ hiển thị phần trăm (đặt vòng tròn làm parent)
+    ui_arc_label = lv_label_create(ui_arc);
+    lv_label_set_text(ui_arc_label, "50%");
+
+    // Hàm này sẽ tự động căn giữa chữ theo vòng tròn cha của nó
+    lv_obj_center(ui_arc_label);
+
+    // THÊM DÒNG NÀY ĐỂ ĐỔI FONT CHỮ TO HƠN (Ví dụ: Size 24)
+    lv_obj_set_style_text_font(ui_arc_label, &lv_font_montserrat_24, 0);
+
     lv_scr_load(scr_home);
     // 3. Vòng lặp duy trì hệ thống
     while (1) {
